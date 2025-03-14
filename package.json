@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "@types/bun": "^1.2.4",
+    "bun-plugin-svelte": "^0.0.5",
+    "svelte": "^5.22.6"
+  }
+}
