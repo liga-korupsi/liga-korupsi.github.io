@@ -1,7 +1,7 @@
 # [Liga Korupsi](https://liga-korupsi.github.io/)
 
 ## Requirement
-bun 1.2.6-canary.xxx or above
+bun 1.2.6 or above
 
 ## Installation
 ```sh

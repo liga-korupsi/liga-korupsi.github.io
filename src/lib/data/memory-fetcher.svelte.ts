@@ -1,4 +1,4 @@
-import Fetcher from "./fetcher.svelte.ts";
+import Fetcher from "./fetcher.svelte";
 
 type MemoryFetcherOptions = {
     getRow?: (row: any) => any;
@@ -6,15 +6,15 @@ type MemoryFetcherOptions = {
 
 export default class MemoryFetcher extends Fetcher {
 
-    #getRow
+    #getRow: (row: any) => any
 
-    constructor(data = [], opts: MemoryFetcherOptions = {}) {
+    constructor(data: any[] = [], opts: MemoryFetcherOptions = {}) {
         super()
         this.rows = data
         this.#getRow = opts.getRow || (r => r)
     }
 
-    sortBy(key) {
+    sortBy(key: string) {
         const order = super.sort(key)[1]
         this.rows.sort((a, b) => {
             let valueA = this.#getRow(a)[key]

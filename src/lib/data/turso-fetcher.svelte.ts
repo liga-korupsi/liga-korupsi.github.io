@@ -1,42 +1,57 @@
-import { HttpFetcher, type HttpFetcherOptions } from "./http-fetcher.svelte.ts";
+import { HttpFetcher, type HttpFetcherOptions } from "./http-fetcher.svelte";
 
-type TursoFetcherOptions = HttpFetcherOptions & { table: string }
+interface TursoFetcherOptions extends HttpFetcherOptions {
+    table: string;
+}
 
 export { TursoFetcher }
 export default class TursoFetcher extends HttpFetcher {
 
-    #table
+    #table: string
 
     constructor(options: TursoFetcherOptions) {
         options.url = `${process.env.PUB_TURSO_URL}/v2/pipeline`;
         options.auth = process.env.PUB_TURSO_AUTH!
+        options.method = 'POST';
         super(options)
         this.#table = options.table
     }
 
-    prepareRequest() {
-        const sql = `SELECT * FROM ${this.#table} ORDER BY ${super.getSort().join(' ')}`;
-        return [ () => ({ requests: [{ type: 'execute', stmt: { sql } }] }), sql ]
+    prepareFetchOne(id: string | number) {
+        return this.prepareSql(`SELECT * FROM ${this.#table} WHERE id = ${id} LIMIT 1`);
     }
 
-    prepareRows(data) {
-        data = data.results?.[0].response.result || { cols: [], rows: [] }
-        const cols = Object.entries(data.cols)
-        const rows = []
+    prepareFetchList() {
+        const [sortKey, sortOrder] = super.getSort();
+        return this.prepareSql(`SELECT * FROM ${this.#table} ORDER BY ${sortKey} ${sortOrder}`);
+    }
 
-        for (const entry of data.rows) {
-            // @ts-ignore
-            rows.push(cols.reduce((row, [index, col]: any[]) => {
-                row[col.name] = entry[index].value
-                return row
-            }, {}))
+    prepareSql(sql: string): [string, () => any, Record<string, any>] {
+        const getBody = () => ({ requests: [{ type: 'execute', stmt: { sql } }] });
+        return [sql, getBody, {}];
+    }
+
+    prepareRows(data: any) {
+        const result = data.results?.[0]?.response?.result || { cols: [], rows: [] };
+        const cols = result.cols || [];
+        const rowsData = result.rows || [];
+        const rows: any[] = [];
+
+        for (const entry of rowsData) {
+            const row: Record<string, any> = {};
+            cols.forEach((col: { name: string }, index: number) => {
+                row[col.name] = entry[index]?.value;
+            });
+            rows.push(row);
         }
 
-        this.rows = rows
+        this.rows = rows;
     }
 
-    sortBy(key) {
+    
+
+    sortBy(key: string) {
         super.sort(key)
-        this.fetch()
+        super.fetchList()
     }
 }
