@@ -23,8 +23,8 @@ export class CaseDetailFetcher {
                 k.nilai,
                 k.daerah,
                 IFNULL(GROUP_CONCAT(kt.tanggal || '::' || kt.deskripsi), '') AS case_timeline_data,
-                IFNULL(GROUP_CONCAT(pt.nama), '') AS people_data,
-                IFNULL(GROUP_CONCAT(b.url || '::' || b.judul), '') AS berita_data
+                IFNULL(GROUP_CONCAT(DISTINCT pt.nama), '') AS people_data,
+                IFNULL(GROUP_CONCAT(DISTINCT b.url || '::' || b.judul), '') AS berita_data
             FROM
                 kasus AS k
             LEFT JOIN
@@ -67,17 +67,16 @@ export class CaseDetailFetcher {
                         return { nama, jabatan, timeline: [] };
                     });
                     delete detail.people_data;
-                } else {
-                    detail.people = [];
                 }
 
-                if (detail.berita_data || '') {
-                    const firstBerita = (detail.berita_data as string).split(',')[0];
-                    const [url, judul] = firstBerita.split('::');
-                    detail.link = url;
+                if (detail.berita_data) {
+                    detail.berita_list = (detail.berita_data as string).split(',').map((item: string) => {
+                        const [url, judul] = item.split('::');
+                        return { url, judul };
+                    });
                     delete detail.berita_data;
                 } else {
-                    detail.link = undefined;
+                    detail.berita_list = [];
                 }
 
                 return {
@@ -86,7 +85,7 @@ export class CaseDetailFetcher {
                     tahun: detail.tahun as string,
                     nilai_kerugian: detail.nilai as number,
                     daerah: detail.daerah as string,
-                    link: detail.link,
+                    berita_list: detail.berita_list,
                     people: detail.people,
                     case_timeline: detail.case_timeline,
                 } as KasusDetail;

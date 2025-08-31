@@ -46,7 +46,19 @@
     <h5 class="margin-bottom-large">{case_detail.title}</h5>
     <div class="margin-bottom-large">
       <strong>Link Berita:</strong>
-      <a href={case_detail.link} target="_blank" class="link">{case_detail.link}</a>
+      {#if case_detail.berita_list && case_detail.berita_list.length > 0}
+        <ul>
+          {#each case_detail.berita_list as berita_item}
+            <li>
+              <a href={berita_item.url} target="_blank" class="link">
+                <i class="small">link</i>&nbsp;{berita_item.judul}
+              </a>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p>Tidak ada link berita.</p>
+      {/if}
     </div>
     <div>
       <strong>Orang yang Terlibat:</strong>
