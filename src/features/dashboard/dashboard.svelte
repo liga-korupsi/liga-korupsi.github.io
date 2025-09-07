@@ -18,13 +18,15 @@
     function formatNilai(value: number | null): string {
         const numeric_value = parseFloat(String(value));
         if (numeric_value === null || typeof numeric_value !== 'number' || isNaN(numeric_value)) return '';
-        if (numeric_value >= 1000) {
-            return (numeric_value / 1000).toFixed(2) + ' Triliun';
-        } else if (numeric_value >= 1) {
-            return numeric_value.toFixed(2) + ' Miliar';
-        } else {
-            return (numeric_value * 1000).toFixed(2) + ' Juta';
+
+        if (numeric_value < 0.9) {
+            const miliar_formatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+            const miliar_value = numeric_value * 1000;
+            return `${miliar_formatter.format(miliar_value)} Miliar`;
         }
+        
+        const triliun_formatter = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 });
+        return `${triliun_formatter.format(numeric_value)} Triliun`;
     }
 
     function handleRowClick(event, row) {
