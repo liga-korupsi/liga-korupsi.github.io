@@ -1,0 +1,18 @@
+.selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+@media only screen and (min-width: 1400px) {
+  .xxl1 { grid-area: auto/span 1; }
+  .xxl2 { grid-area: auto/span 2; }
+  .xxl3 { grid-area: auto/span 3; }
+  .xxl4 { grid-area: auto/span 4; }
+  .xxl5 { grid-area: auto/span 5; }
+  .xxl6 { grid-area: auto/span 6; }
+  .xxl7 { grid-area: auto/span 7; }
+  .xxl8 { grid-area: auto/span 8; }
+  .xxl9 { grid-area: auto/span 9; }
+  .xxl10 { grid-area: auto/span 10; }
+  .xxl11 { grid-area: auto/span 11; }
+  .xxl12 { grid-area: auto/span 12; }
+}

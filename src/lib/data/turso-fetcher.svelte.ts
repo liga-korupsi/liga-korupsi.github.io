@@ -18,7 +18,9 @@ export default class TursoFetcher extends HttpFetcher {
     }
 
     prepareFetchOne(id: string | number) {
-        return this.prepareSql(`SELECT * FROM ${this.#table} WHERE id = ${id} LIMIT 1`);
+        const sql = `SELECT * FROM ${this.#table} WHERE id = ? LIMIT 1`;
+        const args = [{ type: 'number', value: id }];
+        return this.prepareSql(sql, args);
     }
 
     prepareFetchList() {
@@ -34,10 +36,10 @@ export default class TursoFetcher extends HttpFetcher {
     prepareRows(data: any) {
         const result = data.results?.[0]?.response?.result || { cols: [], rows: [] };
         const cols = result.cols || [];
-        const rowsData = result.rows || [];
+        const rows_data = result.rows || [];
         const rows: any[] = [];
 
-        for (const entry of rowsData) {
+        for (const entry of rows_data) {
             const row: Record<string, any> = {};
             cols.forEach((col: { name: string }, index: number) => {
                 row[col.name] = entry[index]?.value;
@@ -53,5 +55,22 @@ export default class TursoFetcher extends HttpFetcher {
     sortBy(key: string) {
         super.sort(key)
         super.fetchList()
+    }
+
+    static addSqlWhere(sql: string, filter: Record<string, any>): [string, Array<{ type: string; value: any }>] {
+        let where_clause = '';
+        const sql_args: Array<{ type: string; value: any }> = [];
+
+        const conditions: string[] = [];
+        for (const key in filter) {
+            if (filter.hasOwnProperty(key)) {
+                conditions.push(`${key} = ?`);
+                sql_args.push({ type: "text", value: filter[key].toString() });
+            }
+        }
+        if (conditions.length > 0) {
+            where_clause = ` WHERE ${conditions.join(' AND ')}`;
+        }
+        return [`${sql}${where_clause}`, sql_args];
     }
 }

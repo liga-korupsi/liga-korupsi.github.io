@@ -24,9 +24,17 @@
     }
   });
 
-  function showPersonDetail(person) {
+  async function showPersonDetail(person) {
     selected_person = person;
     updatePage(page2_element);
+
+    const timeline_data = await case_fetcher.fetchPersonTimeline(person.id);
+
+    if (timeline_data) {
+        selected_person.timeline = timeline_data;
+    } else {
+        selected_person.timeline = [];
+    }
   }
 
   function showMainPage() {
@@ -70,7 +78,7 @@
             <ol>
               {#each case_detail.berita_list as berita_item}
                 <li>
-                  <a href={berita_item.url} target="_blank" class="link button transparent">
+                  <a href={berita_item.url} target="_blank" class="link button transparent selectable">
                     <i class="small">link</i>&nbsp;{berita_item.judul}
                   </a>
                 </li>
@@ -84,7 +92,7 @@
           <strong>Orang yang Terlibat:</strong>
           <ol>
             {#each case_detail.people as person}
-              <li><button class="link transparent" onclick={() => showPersonDetail(person)}>
+              <li><button class="link transparent selectable" onclick={() => showPersonDetail(person)}>
                 {person.nama}
                 {#if person.jabatan}({person.jabatan}){:else}{/if}
               </button></li>
@@ -107,20 +115,38 @@
               <i>arrow_back</i>&nbsp;Kembali
             </button>
           </nav>
-          <h5 class="margin-top-large margin-bottom-large">
-            {selected_person.nama}
-          </h5>
-          <div>
-            <strong>Jabatan:</strong>
-            {selected_person.jabatan || "Tidak diketahui"}
-          </div>
-          <div class="margin-top-large">
-            <strong>Timeline:</strong>
-            <ul>
-              {#each selected_person.timeline as event}
-                <li>{event.tanggal}: {event.status}</li>
-              {/each}
-            </ul>
+          <div class="grid right-padding large-padding">
+            <div class="s6 xxl8">
+              <h5 class="margin-top-large margin-bottom-large">
+                {selected_person.nama}
+              </h5>
+              <div>
+                <strong>Jabatan:</strong>
+                {selected_person.jabatan || "Tidak diketahui"}
+              </div>
+              <div> <!-- Timeline section -->
+                <strong>Timeline:</strong>
+                <ul>
+                  {#each selected_person.timeline as event}
+                    <li>
+                      {event.tanggal}:
+                      {#if event.url}
+                        <a href={event.url} target="_blank" class="link button transparent selectable">
+                          <i class="small">link</i>&nbsp;{event.deskripsi}
+                        </a>
+                      {:else}
+                        {event.deskripsi}
+                      {/if}
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            </div>
+            {#if selected_person.url_foto} <!-- Right Column: Photo -->
+              <div class="s6 xxl4 left-align">
+                <img src={selected_person.url_foto} alt="Foto {selected_person.nama}" class="round right-margin large-margin medium-width medium-height" />
+              </div>
+            {/if}
           </div>
         {:else}
           <p>Pilih seseorang untuk melihat detail.</p>

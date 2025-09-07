@@ -34,7 +34,7 @@
                     <tr>
                         <td>{i + 1}</td>
                         <td>
-                            <button onclick={(e) => handleRowClick(e, row)} class="link transparent">
+                            <button onclick={(e) => handleRowClick(e, row)} class="link transparent selectable">
                                 {row.kasus}
                             </button>
                         </td>

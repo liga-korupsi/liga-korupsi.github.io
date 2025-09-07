@@ -2,8 +2,13 @@ import { Fetcher, type FetcherOptions } from "./fetcher.svelte";
 import { PageState } from "./page-state.svelte";
 
 function isObject(value: any): value is object {
-    return typeof value === 'object' && value !== null && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
+    return typeof value === 'object'
+        && value !== null
+        && !Array.isArray(value)
+        && Object.getPrototypeOf(value) === Object.prototype;
 }
+
+type Identifier = string | number;
 
 export type HttpFetcherOptions = FetcherOptions & {
     url?: string;
@@ -11,6 +16,7 @@ export type HttpFetcherOptions = FetcherOptions & {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
     prepareFetch?: Function;
     params?: Record<string, any>;
+    filter?: Record<string, any>;
 }
 
 export class HttpFetcher extends Fetcher {
@@ -34,12 +40,12 @@ export class HttpFetcher extends Fetcher {
         this.fetchList()
     }
 
-    async fetchList(...args: any[]) {
-        let options: { limit?: number, offset?: number } | undefined;
-        const lastArg = args[args.length - 1];
+    async fetchList(filter?: Record<string, any> | Identifier, ...args: any[]) {
+        const options: { limit?: number, offset?: number } = {};
+        const last_arg = args[args.length - 1];
 
-        if (isObject(lastArg)) {
-            options = args.pop();
+        if (isObject(last_arg)) {
+            Object.assign(options, args.pop());
         }
 
         if (options?.limit !== undefined && options?.offset !== undefined) {
@@ -48,28 +54,29 @@ export class HttpFetcher extends Fetcher {
         }
 
         this.ready = false
-        let requestBody: BodyInit | undefined = undefined;
+        let request_body: BodyInit | undefined = undefined;
         let url = this.#options.url;
+
         const headers: HeadersInit = {
             'Authorization': `Bearer ${this.#options.auth}`,
         };
 
-        const [urlParamsString, getBody, requestParams] = this.#options.prepareFetch!.apply(this, args);
+        const [url_params, getBody, request_params] = this.#options.prepareFetch!.apply(this, [filter, ...args]);
 
         if (this.#options.method === 'GET') {
-            const combinedParams = { ...this.#options.params, ...requestParams };
-            const queryParams = new URLSearchParams(combinedParams).toString();
-            url = `${this.#options.url}?${queryParams}`;
+            const combined_params = { ...this.#options.params, ...request_params };
+            const query_params = new URLSearchParams(combined_params).toString();
+            url = `${this.#options.url}?${query_params}`;
         } else {
             headers['Content-Type'] = 'application/json';
-            requestBody = JSON.stringify(getBody());
+            request_body = JSON.stringify(getBody());
         }
 
         try {
-            const response = await this.#request(url!, headers, requestBody)
+            const response = await this.#request(url!, headers, request_body)
             const totalCountHeader = response.headers.get('X-Pagination-Total-Count');
             this.#total_count_state = totalCountHeader ? parseInt(totalCountHeader, 10) : 0;
-            this.prepareRows(await response.json())
+            this.prepareRows(await response.json(), response)
             return this.ready = true
         } catch (error) {
             console.error('HttpFetcher fetch error:', error);
@@ -79,24 +86,24 @@ export class HttpFetcher extends Fetcher {
     }
 
     async fetchOne(id: string | number) {
-        const tempFetcher = new HttpFetcher({
+        const temp_fetcher = new HttpFetcher({
             url: this.#options.url,
             auth: this.#options.auth,
             method: this.#options.method,
             params: this.#options.params,
-            prepareFetch: () => this.prepareFetchOne(id),
+            prepareFetch: (filter: Record<string, any>) => this.prepareFetchOne(id, filter),
         });
 
-        const success = await tempFetcher.fetchList();
+        const success = await temp_fetcher.fetchList({ id });
 
-        if (success && tempFetcher.rows.length > 0) {
-            return tempFetcher.rows[0];
+        if (success && temp_fetcher.rows.length > 0) {
+            return temp_fetcher.rows[0];
         }
 
         return null;
     }
 
-    async #request(url: string, headers: HeadersInit, body: BodyInit | undefined) {
+    #request(url: string, headers: HeadersInit, body: BodyInit | undefined) {
         return fetch(url, {
             headers: headers,
             body: body,
@@ -104,17 +111,18 @@ export class HttpFetcher extends Fetcher {
         })
     }
 
-    prepareFetchOne(id: any): [string, () => any, Record<string, any>] {
-        return ['', () => ({}), {}];
+    prepareFetchOne(id: any, filter?: Record<string, any>): [string, () => any, Record<string, any>] {
+        const params: Record<string, any> = { ...filter, id };
+        const url_params = new URLSearchParams(params).toString();
+        return [url_params, () => ({}), params];
     }
 
-    prepareFetchList(): [string, () => any, Record<string, any>] {
-        const params: Record<string, any> = {};
+    prepareFetchList(filter?: Record<string, any>): [string, () => any, Record<string, any>] {
+        const params: Record<string, any> = { ...filter };
         params.limit = this.page.limit;
         params.offset = this.page.offset;
 
-        const urlParamsString = new URLSearchParams(params).toString();
-        return [urlParamsString, () => ({}), params];
+        return [new URLSearchParams(params).toString(), () => ({}), params];
     }
 
     prepareRows(data: any) {
