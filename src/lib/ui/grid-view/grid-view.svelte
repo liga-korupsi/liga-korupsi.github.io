@@ -50,7 +50,7 @@
             {@render filters?.()}
             <tbody>
                 {#each data.rows as row, index}
-                    {@render dataRow(row, index)}
+                    {@render dataRow(row, data.page.offset + index)}
                 {:else}
                     <tr><td colspan={columnLen}>
                             <div class="chip vertical">
