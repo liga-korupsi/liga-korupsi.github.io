@@ -1,0 +1,11 @@
+{
+  "name": "svager",
+  "version": "0.0.1",
+  "license": "MIT",
+  "devDependencies": {
+    "svelte": "^5"
+  },
+  "exports": {
+    "./DarkNavs.svelte": "./src/DarkNavs.svelte"
+  }
+}

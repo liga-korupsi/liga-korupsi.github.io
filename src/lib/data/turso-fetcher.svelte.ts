@@ -1,5 +1,6 @@
 import { HttpFetcher, type HttpFetcherOptions } from "./http-fetcher.svelte";
 
+
 interface TursoFetcherOptions extends HttpFetcherOptions {
     table: string;
 }
@@ -8,12 +9,16 @@ export { TursoFetcher }
 export default class TursoFetcher extends HttpFetcher {
 
     #table: string
+    #total_count = $state(0)
 
     constructor(options: TursoFetcherOptions) {
-        options.url = `${process.env.PUB_TURSO_URL}/v2/pipeline`;
-        options.auth = process.env.PUB_TURSO_AUTH!
-        options.method = 'POST';
-        super(options)
+        super({
+            ...options,
+            method: 'POST',
+            auth: process.env.PUB_TURSO_AUTH,
+            url: `${process.env.PUB_TURSO_URL}/v2/pipeline`,
+            getTotalCountState: () => this.#total_count,
+        })
         this.#table = options.table
     }
 
@@ -23,13 +28,19 @@ export default class TursoFetcher extends HttpFetcher {
         return this.prepareSql(sql, args);
     }
 
-    prepareFetchList() {
-        const [sortKey, sortOrder] = super.getSort();
-        return this.prepareSql(`SELECT * FROM ${this.#table} ORDER BY ${sortKey} ${sortOrder}`);
+    prepareFetchList(): [string, () => any, Record<string, any>] {
+        const [sort_key, sort_order] = super.getSort();
+        const sql = `SELECT * FROM ${this.#table} ORDER BY ${sort_key} ${sort_order} LIMIT ${this.page.limit} OFFSET ${this.page.offset}`;
+        const count_sql = `SELECT COUNT(*) FROM ${this.#table}`;
+        return this.prepareSql(sql, [], count_sql);
     }
 
-    prepareSql(sql: string): [string, () => any, Record<string, any>] {
-        const getBody = () => ({ requests: [{ type: 'execute', stmt: { sql } }] });
+    prepareSql(sql: string, args?: Array<{ type: string; value: any }>, count_sql?: string): [string, () => any, Record<string, any>] {
+        const requests = [{ type: 'execute', stmt: { sql: sql, args: args || [] } }];
+        if (count_sql) {
+            requests.push({ type: 'execute', stmt: { sql: count_sql } });
+        }
+        const getBody = () => ({ requests });
         return [sql, getBody, {}];
     }
 
@@ -48,9 +59,13 @@ export default class TursoFetcher extends HttpFetcher {
         }
 
         this.rows = rows;
+        this.#setTotalCount(data);
     }
 
-    
+    #setTotalCount(data: any) {
+        const count = data.results?.[1]?.response?.result?.rows?.[0]?.[0]?.value;
+        this.#total_count = count ? parseInt(data.results[1].response.result.rows[0][0].value, 10) : 0;
+    }
 
     sortBy(key: string) {
         super.sort(key)

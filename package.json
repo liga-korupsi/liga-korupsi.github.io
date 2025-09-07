@@ -10,6 +10,7 @@
     "bun-plugin-svelte": "^0.0.6",
     "concurrently": "^9.2.1",
     "svelte": "^5.38.2",
+    "svager": "file:./src/lib/ui/svager",
     "zerv": "^1.8.3"
   }
 }

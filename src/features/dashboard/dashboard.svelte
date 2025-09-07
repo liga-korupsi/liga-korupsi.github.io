@@ -6,6 +6,7 @@
     const dataFetcher = new DataFetcher({
         table: 'kasus',
         sort: 'nilai desc',
+        page: { limit: 15 }
     });
 
     let selected_case_id = null;

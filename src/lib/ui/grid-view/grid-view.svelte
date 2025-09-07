@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import Spinner from "../spinner.svelte";
+    import Svager from "svager/DarkNavs.svelte";
     import type { Fetcher } from "../../data/fetcher.svelte";
 
     let table: HTMLTableElement;
@@ -44,16 +45,12 @@
     <figure>
         <table bind:this={table} class="stripes {data.ready || data.rows.length || 'center-align'}">
             <thead>
-                <!-- {#if typeof columns === 'function'} -->
                 {@render columns(handleSort, handleKeyDown)}
-                <!-- {/if} -->
             </thead>
             {@render filters?.()}
             <tbody>
                 {#each data.rows as row, index}
-                    <!-- {#if typeof dataRow === 'function'} -->
                     {@render dataRow(row, index)}
-                    <!-- {/if} -->
                 {:else}
                     <tr><td colspan={columnLen}>
                             <div class="chip vertical">
@@ -72,6 +69,8 @@
             </div>
         {/if}
     </figure>
+
+    <Svager page={data.page} />
 </div>
 
 <style>

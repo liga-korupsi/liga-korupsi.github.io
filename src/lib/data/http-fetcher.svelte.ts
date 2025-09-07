@@ -1,6 +1,7 @@
 import { Fetcher, type FetcherOptions } from "./fetcher.svelte";
 import { PageState } from "./page-state.svelte";
 
+
 function isObject(value: any): value is object {
     return typeof value === 'object'
         && value !== null
@@ -17,12 +18,13 @@ export type HttpFetcherOptions = FetcherOptions & {
     prepareFetch?: Function;
     params?: Record<string, any>;
     filter?: Record<string, any>;
+    getTotalCountState?: () => number;
 }
 
 export class HttpFetcher extends Fetcher {
     #cache: Record<string, any> = {}
     #options: HttpFetcherOptions
-    #total_count_state = $state(0)
+    #total_count = $state(0)
     page: PageState;
 
     constructor(options: HttpFetcherOptions) {
@@ -32,7 +34,11 @@ export class HttpFetcher extends Fetcher {
             prepareFetch: this.prepareFetchList,
             ...options,
         }
-        this.page = new PageState(() => this.#total_count_state, options.page)
+
+        this.page = new PageState(
+            options.getTotalCountState || (() => this.#total_count),
+            options.page
+        )
     }
 
     sortBy(key: string) {
@@ -74,8 +80,6 @@ export class HttpFetcher extends Fetcher {
 
         try {
             const response = await this.#request(url!, headers, request_body)
-            const totalCountHeader = response.headers.get('X-Pagination-Total-Count');
-            this.#total_count_state = totalCountHeader ? parseInt(totalCountHeader, 10) : 0;
             this.prepareRows(await response.json(), response)
             return this.ready = true
         } catch (error) {
@@ -125,8 +129,14 @@ export class HttpFetcher extends Fetcher {
         return [new URLSearchParams(params).toString(), () => ({}), params];
     }
 
-    prepareRows(data: any) {
+    prepareRows(data: any, response: Response) {
+        this.#setTotalCount(response);
         this.rows = data;
+    }
+
+    #setTotalCount(response: Response) {
+        const total_count_header = response.headers.get('X-Pagination-Total-Count');
+        this.#total_count = total_count_header ? parseInt(total_count_header, 10) : 0;
     }
 
     getPage() {
