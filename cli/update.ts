@@ -70,6 +70,34 @@ async function updatePihakTimelineUrl(timeline_id: number, new_url: string): Pro
     }
 }
 
+async function updatePihakUrlFoto(pihak_id: number, new_url_foto: string): Promise<void> {
+    const sql = `UPDATE pihak_terlibat SET url_foto = ? WHERE id = ?`;
+    const args = [
+        { type: "text", value: new_url_foto },
+        { type: "integer", value: pihak_id.toString() }
+    ];
+    const result = await executeQuery(sql, args);
+    if (result && result.affected_row_count > 0) {
+        console.log(`Successfully updated url_foto for pihak_terlibat ID: ${pihak_id}.`);
+    } else {
+        console.log(`No entry found with ID: ${pihak_id}. No rows affected.`);
+    }
+}
+
+async function updateKasusName(kasus_id: number, new_name: string): Promise<void> {
+    const sql = `UPDATE kasus SET kasus = ? WHERE id = ?`;
+    const args = [
+        { type: "text", value: new_name },
+        { type: "integer", value: kasus_id.toString() }
+    ];
+    const result = await executeQuery(sql, args);
+    if (result && result.affected_row_count > 0) {
+        console.log(`Successfully updated name for kasus ID: ${kasus_id}.`);
+    } else {
+        console.log(`No entry found with ID: ${kasus_id}. No rows affected.`);
+    }
+}
+
 // Main logic to parse arguments
 const args = process.argv.slice(2); // Assuming 'bun cli update <entity> [args]'
 const entity = args[0]; // e.g., 'berita'
@@ -125,6 +153,24 @@ if (entity === 'berita') {
     const new_url = args[2];
     if (isNaN(timeline_id)) { console.error("Error: 'timeline_id' must be a number."); process.exit(1); }
     updatePihakTimelineUrl(timeline_id, new_url);
+} else if (entity === 'kasus_name') {
+    if (args.length < 3) { // update kasus_name <kasus_id> <new_name>
+        console.error("Usage: bun cli update kasus_name <kasus_id> <new_name>");
+        process.exit(1);
+    }
+    const kasus_id = parseInt(args[1], 10);
+    const new_name = args[2];
+    if (isNaN(kasus_id)) { console.error("Error: 'kasus_id' must be a number."); process.exit(1); }
+    updateKasusName(kasus_id, new_name);
+} else if (entity === 'pihak_url_foto') {
+    if (args.length < 3) { // update pihak_url_foto <pihak_id> <new_url_foto>
+        console.error("Usage: bun cli update pihak_url_foto <pihak_id> <new_url_foto>");
+        process.exit(1);
+    }
+    const pihak_id = parseInt(args[1], 10);
+    const new_url_foto = args[2];
+    if (isNaN(pihak_id)) { console.error("Error: 'pihak_id' must be a number."); process.exit(1); }
+    updatePihakUrlFoto(pihak_id, new_url_foto);
 } else {
     console.error(`Unknown entity for update command: ${entity}`);
     process.exit(1);

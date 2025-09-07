@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "dev": "concurrently \"zerv 5001 -c .server.conf --cors\" \"bun ./index.html\""
+    "dev": "concurrently \"bun dev:be\" \"bun dev:fe\"",
+    "dev:be": "zerv 5001 -c .server.conf --cors",
+    "dev:fe": "bun ./index.html --host=0.0.0.0 --console"
   },
   "devDependencies": {
     "@types/bun": "^1.2.20",
