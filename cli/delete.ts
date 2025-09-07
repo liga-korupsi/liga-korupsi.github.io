@@ -84,6 +84,28 @@ async function deletePihak(id: number): Promise<void> {
     }
 }
 
+async function deletePihakTimeline(pihak_id: number): Promise<void> {
+    const sql = `DELETE FROM pihak_terlibat_timeline WHERE pihak_id = ?`;
+    const result = await executeQuery(sql, [{ type: "integer", value: pihak_id.toString() }]);
+
+    if (result && result.affected_row_count > 0) {
+        console.log(`Successfully deleted timeline entries for pihak_id: ${pihak_id}. Affected rows: ${result.affected_row_count}`);
+    } else {
+        console.log(`No timeline entries found for pihak_id: ${pihak_id}. No rows affected.`);
+    }
+}
+
+async function deletePihakTimelineEntry(timeline_id: number): Promise<void> {
+    const sql = `DELETE FROM pihak_terlibat_timeline WHERE id = ?`;
+    const result = await executeQuery(sql, [{ type: "integer", value: timeline_id.toString() }]);
+
+    if (result && result.affected_row_count > 0) {
+        console.log(`Successfully deleted timeline entry with ID: ${timeline_id}. Affected rows: ${result.affected_row_count}`);
+    } else {
+        console.log(`No timeline entry found with ID: ${timeline_id}. No rows affected.`);
+    }
+}
+
 // Main logic to parse arguments
 const args = process.argv.slice(2); // Assuming 'bun cli delete <entity> <id>'
 const entity = args[0]; // e.g., 'kasus'
@@ -109,6 +131,22 @@ if (entity === 'kasus') {
     const idToDelete = parseInt(args[1], 10);
     if (isNaN(idToDelete)) { console.error("Error: 'id' must be a number."); process.exit(1); }
     deletePihak(idToDelete);
+} else if (entity === 'pihak_timeline') {
+    if (args.length < 2) { // delete pihak_timeline <pihak_id>
+        console.error("Usage: bun cli delete pihak_timeline <pihak_id>");
+        process.exit(1);
+    }
+    const pihak_id = parseInt(args[1], 10);
+    if (isNaN(pihak_id)) { console.error("Error: 'pihak_id' must be a number."); process.exit(1); }
+    deletePihakTimeline(pihak_id);
+} else if (entity === 'pihak_timeline_entry') {
+    if (args.length < 2) { // delete pihak_timeline_entry <timeline_id>
+        console.error("Usage: bun cli delete pihak_timeline_entry <timeline_id>");
+        process.exit(1);
+    }
+    const timeline_id = parseInt(args[1], 10);
+    if (isNaN(timeline_id)) { console.error("Error: 'timeline_id' must be a number."); process.exit(1); }
+    deletePihakTimelineEntry(timeline_id);
 } else {
     console.error(`Unknown entity for delete command: ${entity}`);
     process.exit(1);

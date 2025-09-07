@@ -1,66 +1,4 @@
-interface TursoResponse {
-    baton: any;
-    base_url: any;
-    results: Array<{
-        type: string;
-        response: {
-            type: string;
-            result: any;
-        };
-    }>;
-}
-
-async function executeQuery(sql: string, args?: Array<{ type: string; value: any }>): Promise<any> {
-    const tursoUrl: string | undefined = process.env.PUB_TURSO_URL;
-    const tursoAuth: string | undefined = process.env.PUB_TURSO_AUTH;
-
-    if (!tursoUrl || !tursoAuth) {
-        console.error("Error: PUB_TURSO_URL or PUB_TURSO_AUTH not found in environment variables.");
-        process.exit(1);
-    }
-
-    const apiUrl: string = `${tursoUrl}/v2/pipeline`;
-    const requestBody = {
-        requests: [
-            {
-                type: "execute",
-                stmt: {
-                    sql: sql,
-                    args: args || []
-                }
-            }
-        ]
-    };
-
-    try {
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${tursoAuth}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! ${response.status}: ${errorText}`);
-        }
-
-        const data: TursoResponse = await response.json();
-
-        if (data.results && data.results[0]?.response?.type === 'execute') {
-            return data.results[0].response.result;
-        } else {
-            console.log("No data found or unexpected response format.");
-            return null;
-        }
-
-    } catch (error: any) {
-        console.error("Failed to fetch data:", error.message);
-        process.exit(1);
-    }
-}
+import { executeQuery } from './db';
 
 async function postKasus(kasus: string, tahun: string, nilai: number, daerah: string): Promise<void> {
     const sql = `INSERT INTO kasus (kasus, tahun, nilai, daerah) VALUES (?, ?, ?, ?)`;
@@ -95,12 +33,34 @@ async function postBerita(kasus_id: number, judul: string, url: string): Promise
     console.log("Successfully added new berita entry.");
 }
 
+async function postKasusTimeline(kasus_id: number, tanggal: string, deskripsi: string): Promise<void> {
+    const sql = `INSERT INTO kasus_timeline (kasus_id, tanggal, deskripsi) VALUES (?, ?, ?)`;
+    const args = [
+        { type: "integer", value: kasus_id.toString() },
+        { type: "text", value: tanggal },
+        { type: "text", value: deskripsi }
+    ];
+    await executeQuery(sql, args);
+    console.log("Successfully added new kasus timeline entry.");
+}
+
+async function postPihakTimeline(pihak_id: number, tanggal: string, deskripsi: string): Promise<void> {
+    const sql = `INSERT INTO pihak_terlibat_timeline (pihak_id, tanggal, deskripsi) VALUES (?, ?, ?)`;
+    const args = [
+        { type: "integer", value: pihak_id.toString() },
+        { type: "text", value: tanggal },
+        { type: "text", value: deskripsi }
+    ];
+    await executeQuery(sql, args);
+    console.log("Successfully added new pihak timeline entry.");
+}
+
 // Main logic to parse arguments
 const args = process.argv.slice(2); // Assuming 'bun cli post <entity> [args]'
 
 if (args.length < 1) {
     console.error("Usage: bun cli post <entity> [args]");
-    console.error("Entities: kasus, pihak, berita");
+    console.error("Entities: kasus, pihak, berita, kasus_timeline, pihak_timeline");
     process.exit(1);
 }
 
@@ -136,6 +96,26 @@ if (entity === 'kasus') {
     const url = args[3];
     if (isNaN(kasus_id)) { console.error("Error: 'kasus_id' must be a number."); process.exit(1); }
     postBerita(kasus_id, judul, url);
+} else if (entity === 'kasus_timeline') {
+    if (args.length < 4) {
+        console.error("Usage: bun cli post kasus_timeline <kasus_id> <tanggal> <deskripsi>");
+        process.exit(1);
+    }
+    const kasus_id = parseInt(args[1], 10);
+    const tanggal = args[2];
+    const deskripsi = args[3];
+    if (isNaN(kasus_id)) { console.error("Error: 'kasus_id' must be a number."); process.exit(1); }
+    postKasusTimeline(kasus_id, tanggal, deskripsi);
+} else if (entity === 'pihak_timeline') {
+    if (args.length < 4) {
+        console.error("Usage: bun cli post pihak_timeline <pihak_id> <tanggal> <deskripsi>");
+        process.exit(1);
+    }
+    const pihak_id = parseInt(args[1], 10);
+    const tanggal = args[2];
+    const deskripsi = args[3];
+    if (isNaN(pihak_id)) { console.error("Error: 'pihak_id' must be a number."); process.exit(1); }
+    postPihakTimeline(pihak_id, tanggal, deskripsi);
 } else {
     console.error(`Unknown entity for post command: ${entity}`);
     process.exit(1);
