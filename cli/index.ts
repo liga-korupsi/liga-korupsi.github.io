@@ -41,6 +41,12 @@ Available Commands:
       bun cli update pihak_timeline_deskripsi <timeline_id> <new_deskripsi>
       bun cli update pihak_timeline_url <timeline_id> <new_url>
 
+  update-inflation [id]
+    Description: Calculates and updates the 'nilai_inflasi' column in the 'kasus' table based on historical inflation data. If an ID is provided, only that specific record will be updated.
+    Usage: 
+      bun cli update-inflation
+      bun cli update-inflation <id>
+
   clean-link <url>
     Description: Attempts to clean a given URL, resolving Vertex AI redirects.
     Usage:
@@ -83,6 +89,12 @@ if (command === undefined || command === 'help' || command === '--help') {
         break;
     case 'update':
         Bun.spawnSync(['bun', 'run', 'cli/update.ts', ...commandArgs], {
+            stdout: 'inherit',
+            stderr: 'inherit'
+        });
+        break;
+    case 'update-inflation':
+        Bun.spawnSync(['bun', 'run', 'cli/update-inflation.ts', ...commandArgs], {
             stdout: 'inherit',
             stderr: 'inherit'
         });
