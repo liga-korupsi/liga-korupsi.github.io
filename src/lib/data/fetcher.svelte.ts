@@ -1,54 +1,39 @@
 import { type PageStateOptions } from "./page-state.svelte";
+import createSort from "./sort.svelte";
 
 export type FetcherOptions = {
     sort?: string;
     page?: PageStateOptions
 }
 
-type SortState = {
-    key?: string;
-    columns: Record<string, 'asc' | 'desc'>;
-}
-
 export { Fetcher as default }
+
+type Sorter = {
+    (state: string): Fetcher;
+    order: string;
+    by: string;
+}
 
 export class Fetcher {
 
-    #sort: SortState
     rows = $state<any[]>([])
     ready = $state(false)
+    #sort
 
     constructor(options: FetcherOptions = {}) {
-        this.#sort = { columns: {} }
-        options.sort && this.sort(options.sort)
+        this.#sort = createSort(this)
+        options.sort && this.#sort(options.sort)
     }
 
-    sort(sort: string) {
-        let [key, order] = sort.split(' ')
-        if (this.#sort.key === key) {
-            this.#sort.columns[key] = this.#sort.columns[key] === 'asc' ? 'desc' : 'asc';
-        } else {
-            this.#sort.columns[key] = 'asc';
-            this.#sort.key = key
-        }
-        if (order) {
-            this.#sort.columns[key] = order as 'asc' | 'desc';
-        }
-        else {
-            order = this.#sort.columns[key]
-        }
-        if (!['asc', 'desc'].includes(order)) {
-            order = this.#sort.columns[key] = 'asc';
-        }
-        return [key, order]
-    }
-
-    getSort(): [string | undefined, 'asc' | 'desc' | undefined] {
-        const key = this.#sort.key
-        return [key, key ? this.#sort.columns[key] : undefined]
+    public get sort(): Sorter {
+        return this.#sort
     }
 
     fetch(...args: any[]): Promise<any> {
         throw new Error('fetch() method not implemented')
+    }
+
+    fetchList(...args: any[]): Promise<any> {
+        throw new Error('fetchList() method not implemented')
     }
 }

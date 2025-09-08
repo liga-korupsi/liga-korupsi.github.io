@@ -29,8 +29,7 @@ export default class TursoFetcher extends HttpFetcher {
     }
 
     prepareFetchList(): [string, () => any, Record<string, any>] {
-        const [sort_key, sort_order] = super.getSort();
-        const sql = `SELECT * FROM ${this.#table} ORDER BY ${sort_key} ${sort_order} LIMIT ${this.page.limit} OFFSET ${this.page.offset}`;
+        const sql = `SELECT * FROM ${this.#table} ORDER BY ${this.sort.by} ${this.sort.order} LIMIT ${this.page.limit} OFFSET ${this.page.offset}`;
         const count_sql = `SELECT COUNT(*) FROM ${this.#table}`;
         return this.prepareSql(sql, [], count_sql);
     }

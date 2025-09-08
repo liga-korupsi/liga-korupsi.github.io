@@ -1,15 +1,15 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import Spinner from "../spinner.svelte";
     import Svager from "svager/DarkNavs.svelte";
     import type { Fetcher } from "../../data/fetcher.svelte";
+    import { onMount, Snippet } from "svelte";
 
     let table: HTMLTableElement;
     let columnLen = $state(0)
     let { dataFetcher: data, buttons, columns, filters, dataRow }: {
         dataFetcher: Fetcher,
         buttons?: () => any,
-        columns: (handleSort: (e: MouseEvent | KeyboardEvent) => void, handleKeyDown: (e: KeyboardEvent) => void) => any,
+        columns: Snippet<[]>;
         filters?: () => any,
         dataRow: (row: any, index: number) => any
     } = $props()
@@ -25,15 +25,18 @@
     function handleSort(e: MouseEvent | KeyboardEvent) {
         const target = e.target as HTMLElement;
         const key = target.dataset.key || (target.parentElement as HTMLElement)?.dataset.key;
-        if (key) {
-            data.sort(key);
-        }
+        key && data.sort(key).fetchList();
     }
 
     function handleKeyDown(e: KeyboardEvent) {
         if (e.key === 'Enter' || e.key === ' ') {
             handleSort(e);
         }
+    }
+
+    function registerHeadersHandlers(thead: HTMLHeadElement) {
+        thead.addEventListener('click', handleSort)
+        thead.addEventListener('keydown', handleKeyDown)
     }
 </script>
 
@@ -44,8 +47,8 @@
 
     <figure>
         <table bind:this={table} class="stripes {data.ready || data.rows.length || 'center-align'}">
-            <thead>
-                {@render columns(handleSort, handleKeyDown)}
+            <thead {@attach registerHeadersHandlers}>
+                {@render columns()}
             </thead>
             {@render filters?.()}
             <tbody>
