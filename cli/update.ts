@@ -98,6 +98,49 @@ async function updateKasusName(kasus_id: number, new_name: string): Promise<void
     }
 }
 
+async function updateKasusTahun(kasus_id: number, new_tahun: string): Promise<void> {
+    const sql = `UPDATE kasus SET tahun = ? WHERE id = ?`;
+    const args = [
+        { type: "text", value: new_tahun },
+        { type: "integer", value: kasus_id.toString() }
+    ];
+    const result = await executeQuery(sql, args);
+    if (result && result.affected_row_count > 0) {
+        console.log(`Successfully updated tahun for kasus ID: ${kasus_id}.`);
+    } else {
+        console.log(`No entry found with ID: ${kasus_id}. No rows affected.`);
+    }
+}
+
+async function updateKasusNilai(kasus_id: number, new_nilai: string): Promise<void> {
+    const is_null = new_nilai.toUpperCase() === 'NULL';
+    const sql = `UPDATE kasus SET nilai = ? WHERE id = ?`;
+    const args = [
+        is_null ? { type: "null" } : { type: "float", value: parseFloat(new_nilai) },
+        { type: "integer", value: kasus_id.toString() }
+    ];
+    const result = await executeQuery(sql, args);
+    if (result && result.affected_row_count > 0) {
+        console.log(`Successfully updated nilai for kasus ID: ${kasus_id}.`);
+    } else {
+        console.log(`No entry found with ID: ${kasus_id}. No rows affected.`);
+    }
+}
+
+async function updateKasusDaerah(kasus_id: number, new_daerah_code: string): Promise<void> {
+    const sql = `UPDATE kasus SET daerah = ? WHERE id = ?`;
+    const args = [
+        { type: "text", value: new_daerah_code },
+        { type: "integer", value: kasus_id.toString() }
+    ];
+    const result = await executeQuery(sql, args);
+    if (result && result.affected_row_count > 0) {
+        console.log(`Successfully updated daerah for kasus ID: ${kasus_id}.`);
+    } else {
+        console.log(`No entry found with ID: ${kasus_id}. No rows affected.`);
+    }
+}
+
 // Main logic to parse arguments
 const args = process.argv.slice(2); // Assuming 'bun cli update <entity> [args]'
 const entity = args[0]; // e.g., 'berita'
@@ -171,6 +214,33 @@ if (entity === 'berita') {
     const new_url_foto = args[2];
     if (isNaN(pihak_id)) { console.error("Error: 'pihak_id' must be a number."); process.exit(1); }
     updatePihakUrlFoto(pihak_id, new_url_foto);
+} else if (entity === 'kasus_tahun') {
+    if (args.length < 3) { // update kasus_tahun <kasus_id> <new_tahun>
+        console.error("Usage: bun cli update kasus_tahun <kasus_id> <new_tahun>");
+        process.exit(1);
+    }
+    const kasus_id = parseInt(args[1], 10);
+    const new_tahun = args[2];
+    if (isNaN(kasus_id)) { console.error("Error: 'kasus_id' must be a number."); process.exit(1); }
+    updateKasusTahun(kasus_id, new_tahun);
+} else if (entity === 'kasus_nilai') {
+    if (args.length < 3) { // update kasus_nilai <kasus_id> <new_nilai>
+        console.error("Usage: bun cli update kasus_nilai <kasus_id> <new_nilai>");
+        process.exit(1);
+    }
+    const kasus_id = parseInt(args[1], 10);
+    const new_nilai = args[2];
+    if (isNaN(kasus_id)) { console.error("Error: 'kasus_id' must be a number."); process.exit(1); }
+    updateKasusNilai(kasus_id, new_nilai);
+} else if (entity === 'kasus_daerah') {
+    if (args.length < 3) { // update kasus_daerah <kasus_id> <new_daerah_code>
+        console.error("Usage: bun cli update kasus_daerah <kasus_id> <new_daerah_code>");
+        process.exit(1);
+    }
+    const kasus_id = parseInt(args[1], 10);
+    const new_daerah_code = args[2];
+    if (isNaN(kasus_id)) { console.error("Error: 'kasus_id' must be a number."); process.exit(1); }
+    updateKasusDaerah(kasus_id, new_daerah_code);
 } else {
     console.error(`Unknown entity for update command: ${entity}`);
     process.exit(1);
