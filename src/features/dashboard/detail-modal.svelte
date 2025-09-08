@@ -58,7 +58,7 @@
 <dialog
   id="detail-modal-dialog"
   bind:this={dialog_element}
-  class="large round surface-container-highest large-padding"
+  class="large round surface-container-highest large-padding smax"
 >
   <nav class="right-align">
     <button class="border transparent circle" onclick={() => close()}>
@@ -72,22 +72,7 @@
     <div>
       <div class="page active left" id="page1" bind:this={page1_element}>
         <h5 class="margin-bottom-large">{case_detail.title}</h5>
-        <div class="margin-bottom-large">
-          <strong>Link Berita:</strong>
-          {#if case_detail.berita_list && case_detail.berita_list.length > 0}
-            <ol>
-              {#each case_detail.berita_list as berita_item}
-                <li>
-                  <a href={berita_item.url} target="_blank" class="link button transparent selectable">
-                    <i class="small">link</i>&nbsp;{berita_item.judul}
-                  </a>
-                </li>
-              {/each}
-            </ol>
-          {:else}
-            <p>Tidak ada link berita.</p>
-          {/if}
-        </div>
+        
         <div class="margin-bottom-large">
           <strong>Orang yang Terlibat:</strong>
           <ol>
@@ -103,7 +88,16 @@
           <strong>Timeline Kasus:</strong>
           <ul>
             {#each case_detail.case_timeline as event}
-              <li>{event.tanggal}: {event.status}</li>
+              <li>
+                {event.tanggal}:
+                {#if event.url}
+                  <a href={event.url} target="_blank" class="button link transparent selectable top-margin auto-margin">
+                    <i class="small">link</i>&nbsp;{event.deskripsi}
+                  </a>
+                {:else}
+                  {event.deskripsi}
+                {/if}
+              </li>
             {/each}
           </ul>
         </div>
@@ -116,7 +110,12 @@
             </button>
           </nav>
           <div class="grid right-padding large-padding">
-            <div class="s6 xxl8">
+            {#if selected_person.url_foto}
+              <div class="s12 s">
+                <img src={selected_person.url_foto} alt="Foto {selected_person.nama}" class="round right-margin large-margin medium-width medium-height" />
+              </div>
+            {/if}
+            <div class="s12 m7 xxl8">
               <h5 class="margin-top-large margin-bottom-large">
                 {selected_person.nama}
               </h5>
@@ -126,12 +125,12 @@
               </div>
               <div> <!-- Timeline section -->
                 <strong>Timeline:</strong>
-                <ul>
+                <ul class="no-padding left-margin top-margin">
                   {#each selected_person.timeline as event}
                     <li>
-                      {event.tanggal}:
+                      {event.tanggal}:<br><br>
                       {#if event.url}
-                        <a href={event.url} target="_blank" class="link button transparent selectable">
+                        <a href={event.url} target="_blank" class="button link transparent selectable top-margin auto-margin no-padding">
                           <i class="small">link</i>&nbsp;{event.deskripsi}
                         </a>
                       {:else}
@@ -143,7 +142,7 @@
               </div>
             </div>
             {#if selected_person.url_foto} <!-- Right Column: Photo -->
-              <div class="s6 xxl4 left-align">
+              <div class="l m m5 left-align">
                 <img src={selected_person.url_foto} alt="Foto {selected_person.nama}" class="round right-margin large-margin medium-width medium-height" />
               </div>
             {/if}

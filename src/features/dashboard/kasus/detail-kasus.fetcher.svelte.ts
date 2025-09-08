@@ -26,13 +26,11 @@ export class CaseDetailFetcher {
                 k.kasus,
                 k.tahun,
                 k.nilai,
-                k.daerah,
                 kt_agg.case_timeline_data,
-                pt_agg.people_data,
-                b_agg.berita_data
+                pt_agg.people_data
             FROM kasus AS k
             LEFT JOIN (
-                SELECT kasus_id, IFNULL(GROUP_CONCAT(tanggal || '::' || deskripsi), '') AS case_timeline_data
+                SELECT kasus_id, IFNULL(GROUP_CONCAT(IFNULL(tanggal, '') || '::' || IFNULL(deskripsi, '') || '::' || IFNULL(url, ''), '|||'), '') AS case_timeline_data
                 FROM kasus_timeline
                 GROUP BY kasus_id
             ) AS kt_agg ON k.id = kt_agg.kasus_id
@@ -41,17 +39,13 @@ export class CaseDetailFetcher {
                 FROM pihak_terlibat AS pt
                 GROUP BY kasus_id
             ) AS pt_agg ON k.id = pt_agg.kasus_id
-            LEFT JOIN (
-                SELECT kasus_id, IFNULL(GROUP_CONCAT(url || '::' || judul, '|||'), '') AS berita_data
-                FROM berita
-                GROUP BY kasus_id
-            ) AS b_agg ON k.id = b_agg.kasus_id
+            
         `;
 
         const [sql_with_where, sql_args] = TursoFetcher.addSqlWhere(base_sql, {'k.id': id});
 
         const final_sql = `${sql_with_where}
-            GROUP BY k.id, k.kasus, k.tahun, k.nilai, k.daerah
+            GROUP BY k.id, k.kasus, k.tahun, k.nilai, k.wilayah
             LIMIT 1;`;
 
         const getBody = () => ({ requests: [{ type: 'execute', stmt: { sql: final_sql, args: sql_args } }] });
@@ -66,14 +60,55 @@ export class CaseDetailFetcher {
             if (success && this.turso_fetcher.rows.length > 0) {
                 const detail: any = this.turso_fetcher.rows[0];
 
+                detail.case_timeline = [];
+
                 if (detail.case_timeline_data) {
-                    detail.case_timeline = (detail.case_timeline_data as string).split(',').map((item: string) => {
-                        const [tanggal, deskripsi] = item.split('::');
-                        return { tanggal, deskripsi };
+                    const raw_entries = (detail.case_timeline_data as string).split('|||');
+
+                    raw_entries.forEach(entry => {
+                        const cleaned_entry = entry.startsWith('NULL::') ? entry.substring(6) : entry;
+
+                        const parts = cleaned_entry.split('::');
+                        let tanggal: string | undefined = undefined;
+                        let deskripsi: string | undefined = undefined;
+                        let url: string | undefined = undefined;
+
+                        if (parts.length === 3) {
+                            tanggal = parts[0];
+                            deskripsi = parts[1];
+                            url = parts[2];
+                        } else if (parts.length === 2) {
+                            if (parts[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                tanggal = parts[0];
+                                deskripsi = parts[1];
+                            } else {
+                                deskripsi = parts[0];
+                                url = parts[1];
+                                tanggal = new Date().toISOString().slice(0, 10);
+                            }
+                        } else if (parts.length === 1) {
+                            deskripsi = parts[0];
+                            tanggal = new Date().toISOString().slice(0, 10);
+                        }
+
+                        if (tanggal === '') tanggal = undefined;
+                        if (deskripsi === '') deskripsi = undefined;
+                        if (url === '') url = undefined;
+
+                        const url_regex = /(https?:\/\/[^\\s]+)/g;
+                        const matches = deskripsi?.match(url_regex);
+                        if (matches && matches.length > 0) {
+                            url = matches[0];
+                            deskripsi = deskripsi?.replace(url_regex, '').trim();
+                        }
+
+                        if (tanggal && deskripsi) {
+                            detail.case_timeline.push({ tanggal, deskripsi, url });
+                        }
                     });
-                } else {
-                    detail.case_timeline = [];
                 }
+
+                detail.case_timeline.sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime());
 
                 if (detail.people_data) {
                     detail.people = (detail.people_data as string).split(',').map((item: string) => {
@@ -92,23 +127,11 @@ export class CaseDetailFetcher {
                     delete detail.people_data;
                 }
 
-                if (detail.berita_data) {
-                    detail.berita_list = (detail.berita_data as string).split('|||').map((item: string) => {
-                        const [url, judul] = item.split('::');
-                        return { url, judul };
-                    });
-                    delete detail.berita_data;
-                } else {
-                    detail.berita_list = [];
-                }
-
                 return {
                     id: detail.id as number,
                     title: detail.kasus as string,
                     tahun: detail.tahun as string,
                     nilai_kerugian: detail.nilai as number,
-                    daerah: detail.daerah as string,
-                    berita_list: detail.berita_list,
                     people: detail.people,
                     case_timeline: detail.case_timeline,
                 } as KasusDetail;

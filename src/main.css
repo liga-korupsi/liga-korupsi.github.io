@@ -16,3 +16,10 @@
   .xxl11 { grid-area: auto/span 11; }
   .xxl12 { grid-area: auto/span 12; }
 }
+
+@media only screen and (max-width: 600px) {
+  dialog.smax {
+    block-size: auto !important;
+    inline-size: 100% !important;
+  }
+}
